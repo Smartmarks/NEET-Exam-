@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NTA NEET(UG) Physics CBT Mock Test</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17">
+document.getElementById("btn-download-csv").addEventListener("click", () => {
+  const last = SUBMISSION_LOG[SUBMISSION_LOG.length - 1];
+  if (!last) return;
+  const rows = [
+    ["Candidate", last.candidate],
+    ["Submitted At", last.submittedAt],
+    ["Time Taken", last.timeTaken],
+    ["Score", `${last.score} / 100`],
+    ["Correct", last.correct],
+    ["Incorrect", last.incorrect],
+    ["Unattempted", last.unattempted],
+    ["Accuracy", last.accuracy],
+    [],
+    ["Question", "Selected", "Correct Answer"]
+  ];
+  last.responses.forEach(r => rows.push([`Q${r.q}`, r.selected, r.correct]));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `neet_cbt_result_${last.candidate.replace(/\s+/g, "_")}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("btn-copy-summary").addEventListener("click", () => {
+  const last = SUBMISSION_LOG[SUBMISSION_LOG.length - 1];
+  if (!last) return;
+  const summary = `NEET Physics CBT Result\nCandidate: ${last.candidate}\nSubmitted: ${last.submittedAt}\nTime Taken: ${last.timeTaken}\nScore: ${last.score}/100 (Correct: ${last.correct}, Incorrect: ${last.incorrect}, Unattempted: ${last.unattempted}, Accuracy: ${last.accuracy})`;
+  const btn = document.getElementById("btn-copy-summary");
+  const done = () => { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy Summary"; }, 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(summary).then(done).catch(() => {
+      const ta = document.createElement("textarea");
+      ta.value = summary;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      done();
+    });
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = summary;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    done();
+  }
+});
+
+
+</script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .nta-header { background: linear-gradient(90deg, #0f2d5c 0%, #1a4585 100%); }
+    /* Authentic NTA Question Palette Status Badges */
+    .st-not-visited { background: #e5e7eb; color: #1f2937; border: 1px solid #9ca3af; border-radius: 4px; }
+    .st-not-answered { background: #dc2626; color: #ffffff; border: 1px solid #b91c1c; border-radius: 4px 4px 12px 12px; }
+    .st-answered { background: #16a34a; color: #ffffff; border: 1px solid #15803d; border-radius: 12px 12px 4px 4px; }
+    .st-marked { background: #7c3aed; color: #ffffff; border: 1px solid #6d28d9; border-radius: 9999px; }
+    .st-answered-marked { background: #7c3aed; color: #ffffff; border: 1px solid #6d28d9; border-radius: 9999px; position: relative; }
+    .st-answered-marked::after {
+      content: ''; position: absolute; bottom: -2px; right: -2px;
+      width: 10px; height: 10px; background: #22c55e; border: 1.5px solid #fff; border-radius: 9999px;
+    }
+    .active-q-ring { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1d4ed8; }
+    .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; font-size: 0.85em; line-height: 1.1; margin: 0 2px; }
+    .frac > span:first-child { border-bottom: 1px solid currentColor; padding: 0 3px; }
+    .frac > span:last-child { padding: 0 3px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- TOP NTA HEADER -->
+  <header class="nta-header text-white px-4 py-2.5 shadow-md flex items-center justify-between gap-3 sticky top-0 z-30">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-9 h-9 rounded bg-white/15 flex items-center justify-center font-bold text-sm tracking-tight shrink-0">NTA</div>
+      <div class="min-w-0">
+        <div class="text-sm sm:text-base font-bold truncate">NEET(UG) Physics — CBT Mock Examination</div>
+        <div class="text-xs text-blue-100 truncate">25 Questions | +4 / &minus;1 Marking | NTA CBT Mode</div>
+      </div>
+    </div>
+    <div id="exam-header-controls" class="hidden flex items-center gap-2 sm:gap-4 shrink-0">
+      <button id="btn-qp-modal" type="button" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-white/15 hover:bg-white/25 text-xs font-medium transition">
+        Question Paper
+      </button>
+      <button id="btn-inst-modal" type="button" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-white/15 hover:bg-white/25 text-xs font-medium transition">
+        Instructions
+      </button>
+      <div class="flex items-center gap-2 bg-slate-900/60 border border-white/20 px-3 py-1 rounded">
+        <span class="text-xs text-blue-200 hidden sm:inline">Time Left:</span>
+        <span id="timer-display" class="font-mono font-bold text-sm sm:text-base text-emerald-300">45:00</span>
+      </div>
+      <button id="btn-mobile-palette" type="button" class="lg:hidden px-2.5 py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-semibold">
+        Palette
+      </button>
+    </div>
+  </header>
+
+  <!-- SCREEN 1: INSTRUCTIONS & CANDIDATE LOGIN -->
+  <main id="screen-instructions" class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-slate-800">General Instructions — NTA Computer Based Test (CBT)</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Please read the instructions carefully before starting the test.</p>
+        </div>
+        <div class="flex items-center gap-3 bg-white px-3.5 py-2 rounded-lg border border-slate-200">
+          <div id="inst-avatar" class="w-9 h-9 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-sm">?</div>
+          <div class="text-xs">
+            <div id="inst-cand-preview" class="font-semibold text-slate-800">Candidate: Not entered</div>
+            <div class="text-slate-500">25 Questions | 100 Marks | 45 Min</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-5 text-sm text-slate-700 leading-relaxed">
+        <ol class="list-decimal pl-5 space-y-2">
+          <li>Total duration of this Physics practice test is <strong>45 minutes</strong>. The clock runs at the top right corner and auto-submits when time expires.</li>
+          <li>The paper contains <strong>25 multiple-choice questions</strong>, including <strong>14 diagram-based questions</strong>.</li>
+          <li><strong>Marking Scheme:</strong> Each correct answer carries <strong>+4 marks</strong>, each incorrect answer deducts <strong>&minus;1 mark</strong>, and unattempted questions carry <strong>0 marks</strong>.</li>
+          <li>The Question Palette on the right shows the status of each question using the standard NTA symbols:</li>
+        </ol>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+          <div class="flex items-center gap-2.5"><span class="w-7 h-7 flex items-center justify-center font-bold st-not-visited shrink-0">1</span><span>You have <strong>not visited</strong> the question yet.</span></div>
+          <div class="flex items-center gap-2.5"><span class="w-7 h-7 flex items-center justify-center font-bold st-not-answered shrink-0">2</span><span>You have <strong>not answered</strong> the question.</span></div>
+          <div class="flex items-center gap-2.5"><span class="w-7 h-7 flex items-center justify-center font-bold st-answered shrink-0">3</span><span>You have <strong>answered</strong> the question.</span></div>
+          <div class="flex items-center gap-2.5"><span class="w-7 h-7 flex items-center justify-center font-bold st-marked shrink-0">4</span><span><strong>Marked for Review</strong> (not evaluated if unanswered).</span></div>
+          <div class="flex items-center gap-2.5 sm:col-span-2"><span class="w-7 h-7 flex items-center justify-center font-bold st-answered-marked shrink-0">5</span><span><strong>Answered &amp; Marked for Review</strong> (will be considered for evaluation).</span></div>
+        </div>
+
+        <div id="sched-banner" class="bg-amber-50 border border-amber-300 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="text-xs sm:text-sm font-bold text-amber-950">Scheduled Exam Start: Tomorrow, 25 Nov 2026 at 9:00 AM IST</div>
+            <div id="sched-status-text" class="text-xs text-amber-800 mt-0.5">The exam will unlock automatically at the scheduled start time.</div>
+          </div>
+          <div class="bg-slate-900 text-amber-300 font-mono font-bold text-sm sm:text-base px-3.5 py-1.5 rounded-md border border-amber-400/40">
+            Starts in: <span id="sched-countdown">--:--:--</span>
+          </div>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div class="text-xs sm:text-sm font-medium text-blue-950">Select Exam Duration (Submission Time Recorded):</div>
+          <div class="flex items-center gap-2 text-xs">
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white border border-blue-300 cursor-pointer font-semibold text-blue-900">
+              <input type="radio" name="exam_duration" value="45" checked class="accent-blue-700" /> 45 Min (Standard)
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white border border-slate-300 cursor-pointer text-slate-700">
+              <input type="radio" name="exam_duration" value="30" class="accent-blue-700" /> 30 Min
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-white border border-slate-300 cursor-pointer text-slate-700">
+              <input type="radio" name="exam_duration" value="60" class="accent-blue-700" /> 60 Min
+            </label>
+          </div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <label for="inp-cand-name" class="block text-sm font-bold text-slate-800">Candidate Full Name <span class="text-red-600">*</span></label>
+              <p id="cand-name-hint" class="text-xs text-slate-500 mt-0.5">Enter your name to record your score and unlock the test.</p>
+            </div>
+            <input id="inp-cand-name" type="text" maxlength="60" autocomplete="name" placeholder="Enter your full name (e.g., Rahul Sharma)" class="w-full sm:w-80 px-3.5 py-2.5 rounded-lg border-2 border-slate-300 bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 transition" />
+          </div>
+        </div>
+        <div class="border-t border-slate-200 pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <label class="flex items-start gap-2.5 cursor-pointer select-none">
+            <input id="chk-agree" type="checkbox" class="mt-1 w-4 h-4 accent-blue-700 rounded" />
+            <span class="text-xs sm:text-sm text-slate-700">I have read and understood the instructions. I agree to abide by the NTA CBT marking and navigation rules.</span>
+          </label>
+          <button id="btn-start-exam" type="button" disabled class="px-6 py-2.5 rounded-lg bg-blue-700 text-white font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-800 transition shrink-0">
+            Locked until 9:00 AM
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SCREEN 2: NTA CBT EXAM WORKSPACE -->
+  <section id="screen-exam" class="hidden flex-1 flex flex-col">
+
+
+    <div class="flex-1 flex flex-col lg:flex-row relative">
+      <!-- LEFT: QUESTION PANEL -->
+      <div class="flex-1 flex flex-col bg-white lg:border-r border-slate-200 min-w-0">
+        <!-- Question Sub-header -->
+        <div class="px-4 sm:px-6 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <span id="q-number-label" class="font-bold text-slate-900 text-sm sm:text-base">Question No. 1</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">Physics (+4 / &minus;1)</span>
+            
+          </div>
+          <div class="flex items-center gap-1.5 text-xs">
+            <span class="text-slate-500 mr-1">Text:</span>
+            <button id="btn-font-dec" type="button" class="px-2 py-0.5 rounded border border-slate-300 hover:bg-slate-200 font-semibold">A&minus;</button>
+            <button id="btn-font-inc" type="button" class="px-2 py-0.5 rounded border border-slate-300 hover:bg-slate-200 font-semibold">A+</button>
+          </div>
+        </div>
+
+        <!-- Question Body & Options -->
+        <div id="question-scroll-area" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5">
+          <div id="q-text" class="text-slate-800 leading-relaxed text-base"></div>
+          <div id="q-diagram" class="hidden flex justify-center py-2"></div>
+          <div id="q-options" class="space-y-2.5 pt-1"></div>
+        </div>
+
+        <!-- NTA BOTTOM ACTION BAR -->
+        <div class="bg-slate-50 border-t border-slate-200 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btn-save-next" type="button" class="px-3.5 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold transition">
+              Save &amp; Next
+            </button>
+            <button id="btn-clear" type="button" class="px-3.5 py-2 rounded bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-medium transition">
+              Clear Response
+            </button>
+            <button id="btn-save-mark" type="button" class="px-3.5 py-2 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-semibold transition">
+              Save &amp; Mark for Review
+            </button>
+            <button id="btn-mark-next" type="button" class="px-3.5 py-2 rounded bg-violet-600 hover:bg-violet-700 text-white text-xs sm:text-sm font-semibold transition">
+              Mark for Review &amp; Next
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btn-prev" type="button" class="px-3 py-2 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs sm:text-sm font-medium">&laquo; Back</button>
+            <button id="btn-next" type="button" class="px-3 py-2 rounded bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-medium">Next &raquo;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: QUESTION PALETTE SIDEBAR -->
+      <aside id="palette-sidebar" class="hidden lg:flex lg:w-80 xl:w-84 bg-slate-50 flex-col border-l border-slate-200 fixed lg:static inset-y-0 right-0 z-40 w-80 shadow-xl lg:shadow-none pt-14 lg:pt-0">
+        <div class="p-3.5 border-b border-slate-200 bg-white flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-blue-700 text-white text-xs font-bold flex items-center justify-center">NA</div>
+            <div class="text-xs">
+              <div id="sidebar-cand-name" class="font-bold text-slate-800">NEET Aspirant</div>
+              <div class="text-slate-500">Physics (Section A)</div>
+            </div>
+          </div>
+          <button id="btn-close-palette" type="button" class="lg:hidden text-xs px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold">Close</button>
+        </div>
+
+        <!-- Live 5-State Legend -->
+        <div class="p-3.5 border-b border-slate-200 bg-white grid grid-cols-2 gap-2 text-[11px] text-slate-700">
+          <div class="flex items-center gap-1.5"><span id="cnt-answered" class="w-6 h-6 flex items-center justify-center font-bold st-answered shrink-0">0</span><span>Answered</span></div>
+          <div class="flex items-center gap-1.5"><span id="cnt-not-answered" class="w-6 h-6 flex items-center justify-center font-bold st-not-answered shrink-0">0</span><span>Not Answered</span></div>
+          <div class="flex items-center gap-1.5"><span id="cnt-not-visited" class="w-6 h-6 flex items-center justify-center font-bold st-not-visited shrink-0">25</span><span>Not Visited</span></div>
+          <div class="flex items-center gap-1.5"><span id="cnt-marked" class="w-6 h-6 flex items-center justify-center font-bold st-marked shrink-0">0</span><span>Marked</span></div>
+          <div class="flex items-center gap-1.5 col-span-2"><span id="cnt-answered-marked" class="w-6 h-6 flex items-center justify-center font-bold st-answered-marked shrink-0">0</span><span>Answered &amp; Marked for Review</span></div>
+        </div>
+
+        <!-- Question Grid -->
+        <div class="flex-1 p-3.5 overflow-y-auto">
+          <div class="text-xs font-bold text-slate-700 mb-2.5 uppercase tracking-wide">Question Palette (1–25)</div>
+          <div id="palette-grid" class="grid grid-cols-5 gap-2"></div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="p-3.5 bg-white border-t border-slate-200">
+          <button id="btn-open-submit" type="button" class="w-full py-2.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm shadow-sm transition">
+            Submit Test
+          </button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: RESULT & SOLUTION REVIEW -->
+  <section id="screen-results" class="hidden flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">NTA CBT Score Card &amp; Performance Analysis</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">25 NEET Physics Questions | Marking: +4 / &minus;1 | <span id="res-submitted-at"></span></p>
+          <div id="email-status-badge" class="mt-1.5 text-xs font-medium text-blue-700"></div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-download-csv" type="button" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold">
+            Download CSV
+          </button>
+          <button id="btn-copy-summary" type="button" class="px-3.5 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs sm:text-sm font-semibold">
+            Copy Summary
+          </button>
+          <button id="btn-retake" type="button" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold">
+            Retake Test
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5 text-center">
+        <div class="p-3 rounded-lg bg-blue-50 border border-blue-200">
+          <div class="text-xs text-blue-700 font-medium">Total Score</div>
+          <div id="res-score" class="text-2xl font-bold text-blue-900 mt-0.5">0 / 100</div>
+        </div>
+        <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+          <div class="text-xs text-emerald-700 font-medium">Correct (+4)</div>
+          <div id="res-correct" class="text-2xl font-bold text-emerald-800 mt-0.5">0</div>
+        </div>
+        <div class="p-3 rounded-lg bg-red-50 border border-red-200">
+          <div class="text-xs text-red-700 font-medium">Incorrect (&minus;1)</div>
+          <div id="res-incorrect" class="text-2xl font-bold text-red-700 mt-0.5">0</div>
+        </div>
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+          <div class="text-xs text-slate-600 font-medium">Unattempted</div>
+          <div id="res-unattempted" class="text-2xl font-bold text-slate-800 mt-0.5">0</div>
+        </div>
+        <div class="p-3 rounded-lg bg-violet-50 border border-violet-200 col-span-2 sm:col-span-1">
+          <div class="text-xs text-violet-700 font-medium">Accuracy / Time</div>
+          <div id="res-acc-time" class="text-lg font-bold text-violet-900 mt-1">0%</div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- Solution Review -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 class="text-lg font-bold text-slate-900">Detailed Solutions &amp; Answer Review</h3>
+        <div id="review-filters" class="flex flex-wrap gap-1.5 text-xs font-medium">
+          <button data-filter="all" type="button" class="rev-filter px-3 py-1.5 rounded bg-blue-700 text-white">All (25)</button>
+          <button data-filter="correct" type="button" class="rev-filter px-3 py-1.5 rounded bg-slate-100 text-slate-700">Correct</button>
+          <button data-filter="incorrect" type="button" class="rev-filter px-3 py-1.5 rounded bg-slate-100 text-slate-700">Incorrect</button>
+          <button data-filter="unattempted" type="button" class="rev-filter px-3 py-1.5 rounded bg-slate-100 text-slate-700">Unattempted</button>
+        </div>
+      </div>
+      <div id="review-list" class="space-y-4"></div>
+    </div>
+  </section>
+
+  <!-- IN-PAGE MODALS -->
+  <div id="modal-backdrop" class="hidden fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center p-4">
+    <div id="modal-box" class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+      <div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <h3 id="modal-title" class="font-bold text-slate-900 text-base"></h3>
+        <button id="btn-modal-close" type="button" class="text-slate-500 hover:text-slate-800 text-sm font-semibold px-2 py-1">Close</button>
+      </div>
+      <div id="modal-body" class="p-5 overflow-y-auto text-sm text-slate-700"></div>
+      <div id="modal-footer" class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2"></div>
+    </div>
+  </div>
+
+<script>
+const QUESTIONS = [
+  {
+    id: 1, chapter: "Units & Measurements",
+    text: "A cylindrical metal wire has mass <i>m</i> = (0.4 &plusmn; 0.002) g, radius <i>r</i> = (0.3 &plusmn; 0.001) mm, and length <i>L</i> = (5 &plusmn; 0.02) cm as shown. Find the maximum percentage error in the measurement of its density.",
+    svg: `<svg viewBox="0 0 260 95" class="w-64 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <ellipse cx="45" cy="40" rx="10" ry="22" fill="#dbeafe" stroke="#1e40af" stroke-width="1.8"/>
+      <line x1="45" y1="18" x2="205" y2="18" stroke="#1e40af" stroke-width="1.8"/>
+      <line x1="45" y1="62" x2="205" y2="62" stroke="#1e40af" stroke-width="1.8"/>
+      <ellipse cx="205" cy="40" rx="10" ry="22" fill="#dbeafe" stroke="#1e40af" stroke-width="1.8"/>
+      <line x1="45" y1="76" x2="205" y2="76" stroke="#334155" stroke-width="1.2"/>
+      <text x="125" y="90" font-size="11" text-anchor="middle" fill="#334155">L = 5 cm</text>
+      <line x1="205" y1="40" x2="205" y2="18" stroke="#dc2626" stroke-width="1.4"/>
+      <text x="214" y="32" font-size="10" fill="#dc2626">r = 0.3 mm</text>
+    </svg>`,
+    options: ["1.2%", "1.6%", "1.4%", "2.0%"],
+    ans: 1,
+    sol: "Density &rho; = m / (&pi;r<sup>2</sup>L). Percentage errors add with powers: &Delta;&rho;/&rho; = &Delta;m/m + 2(&Delta;r/r) + &Delta;L/L = (0.002/0.4 + 2&times;0.001/0.3 + 0.02/5) &times; 100% = 0.5% + 0.67% + 0.4% &approx; 1.57% &approx; 1.6%."
+  },
+  {
+    id: 2, chapter: "Units & Measurements",
+    text: "A simple pendulum experiment gives length <i>l</i> = (100 &plusmn; 0.1) cm and time period <i>T</i> = (2 &plusmn; 0.01) s. Using <i>T</i> = 2&pi;&radic;(<i>l</i>/<i>g</i>), find the percentage error in the measured value of <i>g</i>.",
+    svg: `<svg viewBox="0 0 180 120" class="w-44 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <line x1="40" y1="12" x2="140" y2="12" stroke="#1e293b" stroke-width="2.5"/>
+      <line x1="90" y1="12" x2="90" y2="92" stroke="#334155" stroke-width="1.6"/>
+      <circle cx="90" cy="96" r="10" fill="#bfdbfe" stroke="#1d4ed8" stroke-width="1.8"/>
+      <line x1="90" y1="12" x2="132" y2="82" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <circle cx="134" cy="85" r="8" fill="#e2e8f0" stroke="#64748b" stroke-dasharray="3 2"/>
+      <text x="76" y="56" font-size="12" fill="#1e293b" font-style="italic">l</text>
+    </svg>`,
+    options: ["0.6%", "1.1%", "1.5%", "2.1%"],
+    ans: 1,
+    sol: "From g = 4&pi;<sup>2</sup>l/T<sup>2</sup>, &Delta;g/g = &Delta;l/l + 2(&Delta;T/T) = (0.1/100)&times;100% + 2&times;(0.01/2)&times;100% = 0.1% + 1.0% = 1.1%."
+  },
+  {
+    id: 3, chapter: "Units & Measurements",
+    text: "A screw gauge has a zero error of &minus;0.03 mm. When used to measure the diameter of a wire, it gives: main scale reading = 0 mm, circular scale reading = 52 divisions. Given that 1 mm on the main scale corresponds to 100 divisions on the circular scale, the corrected diameter of the wire is:",
+    svg: `<svg viewBox="0 0 230 105" class="w-56 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <rect x="35" y="20" width="90" height="45" fill="#fff" stroke="#334155" stroke-width="1.5"/>
+      <line x1="35" y1="42.5" x2="125" y2="42.5" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="10" y="46" font-size="10" fill="#334155">0 mm</text>
+      <rect x="125" y="10" width="60" height="65" fill="#e0f2fe" stroke="#1e40af" stroke-width="1.6"/>
+      <line x1="125" y1="21" x2="142" y2="21" stroke="#334155"/><text x="146" y="24" font-size="9">60</text>
+      <line x1="125" y1="42.5" x2="142" y2="42.5" stroke="#dc2626" stroke-width="1.5"/><text x="146" y="45" font-size="9" fill="#dc2626" font-weight="bold">52</text>
+      <line x1="125" y1="63" x2="142" y2="63" stroke="#334155"/><text x="146" y="66" font-size="9">45</text>
+      <text x="115" y="95" font-size="10" text-anchor="middle" fill="#1e40af" font-weight="bold">Zero error = &minus;0.03 mm</text>
+    </svg>`,
+    options: ["0.049 cm", "0.055 cm", "0.052 cm", "0.55 cm"],
+    ans: 1,
+    sol: "Least count = 1 mm / 100 = 0.01 mm. Observed reading = 0 + 52 &times; 0.01 mm = 0.52 mm. Corrected diameter = Observed reading &minus; Zero error = 0.52 &minus; (&minus;0.03) = 0.55 mm = 0.055 cm."
+  },
+  {
+    id: 4, chapter: "Units & Measurements",
+    text: "Dimensions of universal gravitational constant (<i>G</i>) in terms of Planck&apos;s constant (<i>h</i>), distance (<i>L</i>), mass (<i>M</i>) and time (<i>T</i>) are ______.",
+    options: [
+      "[<i>h</i> <i>T</i> <i>L</i> <i>M</i><sup>&minus;2</sup>]",
+      "[<i>h</i> <i>T</i><sup>&minus;1</sup> <i>L</i> <i>M</i><sup>&minus;2</sup>]",
+      "[<i>h</i> <i>T</i> <i>L</i><sup>2</sup> <i>M</i><sup>&minus;2</sup>]",
+      "[<i>h</i><sup>&minus;1</sup> <i>T</i><sup>&minus;1</sup> <i>L</i> <i>M</i><sup>&minus;2</sup>]"
+    ],
+    ans: 1,
+    sol: "[G] = [M<sup>&minus;1</sup>L<sup>3</sup>T<sup>&minus;2</sup>] and [h] = [ML<sup>2</sup>T<sup>&minus;1</sup>]. Dividing [G] by [h] gives [M<sup>&minus;2</sup>LT<sup>&minus;1</sup>], so [G] = [h T<sup>&minus;1</sup> L M<sup>&minus;2</sup>]."
+  },
+  {
+    id: 5, chapter: "Units & Measurements",
+    text: "The quantities <i>P</i>, <i>Q</i>, and <i>R</i> are measured with percentage errors of 1%, 2%, and 3% respectively. Find the maximum percentage error in <i>X</i> = <i>P</i><sup>2</sup><i>Q</i><sup>3</sup> / &radic;<i>R</i>.",
+    options: ["7.5%", "8.5%", "9.5%", "11.0%"],
+    ans: 2,
+    sol: "Max percentage error = 2(&Delta;P/P) + 3(&Delta;Q/Q) + (1/2)(&Delta;R/R) = 2(1%) + 3(2%) + 0.5(3%) = 2 + 6 + 1.5 = 9.5%."
+  },
+  {
+    id: 6, chapter: "Motion in a Straight Line",
+    text: "A bullet from a gun is fired on a rectangular wooden block with velocity <i>u</i>. When the bullet travels 24 cm horizontally through the block, its velocity becomes <i>u</i>/3. It further penetrates in the same direction before coming to rest at the other end. The total length of the block is:",
+    svg: `<svg viewBox="0 0 280 95" class="w-72 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <rect x="60" y="24" width="180" height="44" fill="#fef3c7" stroke="#b45309" stroke-width="1.6"/>
+      <line x1="205" y1="24" x2="205" y2="68" stroke="#92400e" stroke-dasharray="3 2"/>
+      <line x1="15" y1="46" x2="58" y2="46" stroke="#dc2626" stroke-width="2"/>
+      <polygon points="58,46 50,42 50,50" fill="#dc2626"/>
+      <text x="32" y="38" font-size="11" fill="#dc2626">u</text>
+      <text x="200" y="40" font-size="10" fill="#1e40af">u/3</text>
+      <text x="245" y="49" font-size="10" fill="#334155">v=0</text>
+      <line x1="60" y1="80" x2="205" y2="80" stroke="#334155"/>
+      <text x="132" y="92" font-size="10" text-anchor="middle">24 cm</text>
+      <text x="150" y="15" font-size="10" text-anchor="middle">Total length L</text>
+    </svg>`,
+    options: ["24 cm", "28 cm", "30 cm", "27 cm"],
+    ans: 3,
+    sol: "With uniform retardation a: u<sup>2</sup> &minus; (u/3)<sup>2</sup> = 2a(24) &rArr; 2a = u<sup>2</sup>/27 cm<sup>&minus;1</sup>. Remaining penetration s = (u/3)<sup>2</sup>/(2a) = 3 cm. Total length = 24 + 3 = 27 cm."
+  },
+  {
+    id: 7, chapter: "Motion in a Straight Line",
+    text: "A horizontal bridge is built across a river. A student standing on the bridge throws a small ball vertically upwards with velocity 4 m s<sup>&minus;1</sup>. The ball strikes the water surface after 4 s. The height of the bridge above the water surface is (<i>g</i> = 10 m s<sup>&minus;2</sup>):",
+    svg: `<svg viewBox="0 0 220 115" class="w-56 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <rect x="45" y="36" width="130" height="10" fill="#cbd5e1" stroke="#475569"/>
+      <line x1="15" y1="100" x2="205" y2="100" stroke="#0284c7" stroke-width="2.5"/>
+      <text x="172" y="94" font-size="10" fill="#0284c7">Water</text>
+      <circle cx="110" cy="28" r="5" fill="#dc2626"/>
+      <line x1="110" y1="23" x2="110" y2="6" stroke="#dc2626" stroke-width="1.8"/>
+      <polygon points="110,4 106,11 114,11" fill="#dc2626"/>
+      <text x="118" y="16" font-size="10" fill="#dc2626">u = 4 m/s</text>
+      <line x1="65" y1="46" x2="65" y2="100" stroke="#334155" stroke-dasharray="3 2"/>
+      <text x="52" y="75" font-size="11" font-style="italic">h</text>
+    </svg>`,
+    options: ["60 m", "64 m", "68 m", "56 m"],
+    ans: 1,
+    sol: "Taking upward positive: s = ut &minus; (1/2)gt<sup>2</sup> = 4(4) &minus; 0.5(10)(16) = 16 &minus; 80 = &minus;64 m. Hence bridge height h = 64 m."
+  },
+  {
+    id: 8, chapter: "Motion in a Straight Line",
+    text: "The ratio of the distances travelled by a freely falling body in the 1<sup>st</sup>, 2<sup>nd</sup>, 3<sup>rd</sup>, and 4<sup>th</sup> second is:",
+    options: ["1 : 2 : 3 : 4", "1 : 4 : 9 : 16", "1 : 3 : 5 : 7", "1 : 1 : 1 : 1"],
+    ans: 2,
+    sol: "From rest, distance in the n-th second is s<sub>n</sub> = (g/2)(2n &minus; 1), giving 1 : 3 : 5 : 7 for n = 1, 2, 3, 4."
+  },
+  {
+    id: 9, chapter: "Motion in a Straight Line",
+    text: "A small block slides down on a smooth inclined plane, starting from rest at <i>t</i> = 0. Let <i>S<sub>n</sub></i> be the distance travelled by the block in the interval <i>t</i> = <i>n</i> &minus; 1 to <i>t</i> = <i>n</i>. Then the ratio <i>S<sub>n</sub></i> / <i>S</i><sub><i>n</i>+1</sub> is:",
+    svg: `<svg viewBox="0 0 220 105" class="w-56 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <polygon points="30,90 190,90 30,20" fill="#f1f5f9" stroke="#334155" stroke-width="1.8"/>
+      <rect x="62" y="25" width="24" height="16" transform="rotate(23.6 62 25)" fill="#bfdbfe" stroke="#1d4ed8" stroke-width="1.5"/>
+      <line x1="92" y1="36" x2="122" y2="49" stroke="#dc2626" stroke-width="1.8"/>
+      <polygon points="124,50 116,51 119,43" fill="#dc2626"/>
+      <text x="155" y="84" font-size="11">&theta;</text>
+    </svg>`,
+    options: ["(2n &minus; 1) / 2n", "(2n &minus; 1) / (2n + 1)", "(2n + 1) / (2n &minus; 1)", "2n / (2n &minus; 1)"],
+    ans: 1,
+    sol: "With constant acceleration a from rest, S<sub>n</sub> = (a/2)(2n &minus; 1) and S<sub>n+1</sub> = (a/2)(2n + 1), so S<sub>n</sub>/S<sub>n+1</sub> = (2n &minus; 1)/(2n + 1)."
+  },
+  {
+    id: 10, chapter: "Motion in a Straight Line",
+    text: "A toy car with charge <i>q</i> moves on a frictionless horizontal plane surface under the influence of a uniform electric field <b><i>E</i></b>. Due to the force <i>q</i><b><i>E</i></b>, its velocity increases from 0 to 6 m/s in one second duration. At that instant the direction of the field is reversed. The car continues to move for two more seconds under this field. The average velocity and the average speed between 0 to 3 s are respectively:",
+    options: ["1 m/s, 3.5 m/s", "1 m/s, 3 m/s", "2 m/s, 4 m/s", "1.5 m/s, 3 m/s"],
+    ans: 1,
+    sol: "a = 6 m/s<sup>2</sup>. 0–1 s: +3 m. 1–2 s: decelerates to 0 (+3 m). 2–3 s: moves backward (&minus;3 m). Net displacement = 3 m, distance = 9 m in 3 s. Average velocity = 1 m/s; average speed = 3 m/s."
+  },
+  {
+    id: 11, chapter: "Motion in a Plane",
+    text: "A bullet is fired from a gun at a speed of 280 m s<sup>&minus;1</sup> in the direction 30&deg; above the horizontal. The maximum height attained by the bullet is (<i>g</i> = 9.8 m s<sup>&minus;2</sup>, sin 30&deg; = 0.5):",
+    svg: `<svg viewBox="0 0 250 110" class="w-64 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <line x1="20" y1="92" x2="235" y2="92" stroke="#334155" stroke-width="1.5"/>
+      <path d="M 25 92 Q 125 -5 225 92" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+      <line x1="25" y1="92" x2="80" y2="55" stroke="#dc2626" stroke-width="1.8"/>
+      <polygon points="82,54 73,55 77,61" fill="#dc2626"/>
+      <text x="64" y="48" font-size="10" fill="#dc2626">u = 280 m/s</text>
+      <text x="58" y="86" font-size="10">30&deg;</text>
+      <line x1="125" y1="43" x2="125" y2="92" stroke="#475569" stroke-dasharray="3 2"/>
+      <text x="130" y="72" font-size="10">H_max</text>
+    </svg>`,
+    options: ["2000 m", "1000 m", "3000 m", "2800 m"],
+    ans: 1,
+    sol: "H = (u sin 30&deg;)<sup>2</sup>/(2g) = (280 &times; 0.5)<sup>2</sup>/(2 &times; 9.8) = 19600/19.6 = 1000 m."
+  },
+  {
+    id: 12, chapter: "Motion in a Plane",
+    text: "A ball is projected with a velocity of 10 m s<sup>&minus;1</sup> at an angle of 60&deg; with the vertical direction as shown. Its speed at the highest point of its trajectory will be:",
+    svg: `<svg viewBox="0 0 220 110" class="w-56 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <line x1="20" y1="92" x2="200" y2="92" stroke="#334155" stroke-width="1.4"/>
+      <line x1="35" y1="92" x2="35" y2="15" stroke="#334155" stroke-width="1.4"/>
+      <path d="M 35 92 Q 110 30 185 92" fill="none" stroke="#1d4ed8" stroke-width="1.6" stroke-dasharray="4 3"/>
+      <line x1="35" y1="92" x2="88" y2="60" stroke="#dc2626" stroke-width="2"/>
+      <text x="90" y="58" font-size="10" fill="#dc2626">u = 10 m/s</text>
+      <path d="M 35 60 A 32 32 0 0 1 63 75" fill="none" stroke="#334155"/>
+      <text x="48" y="55" font-size="10">60&deg;</text>
+    </svg>`,
+    options: ["Zero", "5&radic;3 m s<sup>&minus;1</sup>", "5 m s<sup>&minus;1</sup>", "10 m s<sup>&minus;1</sup>"],
+    ans: 1,
+    sol: "At the highest point, only the horizontal component survives. Since 60&deg; is with the vertical, v<sub>x</sub> = u sin 60&deg; = 10(&radic;3/2) = 5&radic;3 m s<sup>&minus;1</sup>."
+  },
+  {
+    id: 13, chapter: "Motion in a Plane",
+    text: "A particle moving in a circle of radius <i>R</i> with a uniform speed takes a time <i>T</i> to complete one revolution. If this particle were projected with the same speed at an angle &theta; to the horizontal, the maximum height attained by it equals 4<i>R</i>. The angle of projection &theta; is given by:",
+    options: [
+      "&theta; = cos<sup>&minus;1</sup>(gT<sup>2</sup> / &pi;<sup>2</sup>R)<sup>1/2</sup>",
+      "&theta; = cos<sup>&minus;1</sup>(&pi;<sup>2</sup>R / gT<sup>2</sup>)<sup>1/2</sup>",
+      "&theta; = sin<sup>&minus;1</sup>(&pi;<sup>2</sup>R / gT<sup>2</sup>)<sup>1/2</sup>",
+      "&theta; = sin<sup>&minus;1</sup>(2gT<sup>2</sup> / &pi;<sup>2</sup>R)<sup>1/2</sup>"
+    ],
+    ans: 3,
+    sol: "u = 2&pi;R/T. H = u<sup>2</sup>sin<sup>2</sup>&theta;/(2g) = 4R &rArr; sin<sup>2</sup>&theta; = 8gR/u<sup>2</sup> = 2gT<sup>2</sup>/(&pi;<sup>2</sup>R), so &theta; = sin<sup>&minus;1</sup>(2gT<sup>2</sup>/&pi;<sup>2</sup>R)<sup>1/2</sup>."
+  },
+  {
+    id: 14, chapter: "Motion in a Plane",
+    text: "The speed of a swimmer in still water is 20 m/s. The speed of river water is 10 m/s and is flowing due east. Standing on the south bank, if he wishes to cross the river along the shortest path, the angle at which he should make his strokes w.r.t. north is:",
+    svg: `<svg viewBox="0 0 220 110" class="w-56 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <line x1="20" y1="20" x2="200" y2="20" stroke="#334155" stroke-width="2"/>
+      <line x1="20" y1="92" x2="200" y2="92" stroke="#334155" stroke-width="2"/>
+      <line x1="110" y1="92" x2="110" y2="20" stroke="#64748b" stroke-dasharray="3 2"/>
+      <text x="115" y="14" font-size="10">North</text>
+      <line x1="130" y1="56" x2="180" y2="56" stroke="#0284c7" stroke-width="2"/>
+      <polygon points="183,56 176,52 176,60" fill="#0284c7"/>
+      <text x="140" y="49" font-size="10" fill="#0284c7">10 m/s</text>
+      <line x1="110" y1="92" x2="72" y2="30" stroke="#dc2626" stroke-width="2"/>
+      <text x="42" y="55" font-size="10" fill="#dc2626">20 m/s</text>
+      <text x="93" y="65" font-size="10">&theta;</text>
+    </svg>`,
+    options: ["30&deg; west", "0&deg;", "60&deg; west", "45&deg; west"],
+    ans: 0,
+    sol: "For the shortest path due north, 20 sin &theta; = 10 &rArr; sin &theta; = 1/2 &rArr; &theta; = 30&deg; west of north."
+  },
+  {
+    id: 15, chapter: "Motion in a Plane",
+    text: "A particle moves so that its position vector is given by <b><i>r</i></b> = cos(&omega;<i>t</i>)<b><i>x&#770;</i></b> + sin(&omega;<i>t</i>)<b><i>y&#770;</i></b>, where &omega; is a constant. Which of the following is true?",
+    options: [
+      "Velocity and acceleration both are perpendicular to r",
+      "Velocity and acceleration both are parallel to r",
+      "Velocity is perpendicular to r and acceleration is directed towards the origin",
+      "Velocity is perpendicular to r and acceleration is directed away from the origin"
+    ],
+    ans: 2,
+    sol: "v = dr/dt = &omega;(&minus;sin(&omega;t)x&#770; + cos(&omega;t)y&#770;), so v&middot;r = 0 (perpendicular). a = dv/dt = &minus;&omega;<sup>2</sup>r, directed towards the origin."
+  },
+  {
+    id: 16, chapter: "Laws of Motion",
+    text: "A 1 kg object strikes a wall with velocity 1 m s<sup>&minus;1</sup> at an angle of 60&deg; with the wall and reflects at the same angle. If it remains in contact with the wall for 0.1 s, the force exerted on the wall is:",
+    svg: `<svg viewBox="0 0 180 115" class="w-44 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <rect x="130" y="10" width="14" height="95" fill="#cbd5e1" stroke="#334155"/>
+      <line x1="45" y1="22" x2="130" y2="57" stroke="#dc2626" stroke-width="2"/>
+      <polygon points="130,57 121,57 124,50" fill="#dc2626"/>
+      <line x1="130" y1="57" x2="45" y2="92" stroke="#1d4ed8" stroke-width="2"/>
+      <polygon points="45,92 54,92 51,85" fill="#1d4ed8"/>
+      <text x="108" y="34" font-size="10">60&deg;</text>
+      <text x="108" y="88" font-size="10">60&deg;</text>
+      <text x="48" y="20" font-size="10" fill="#dc2626">1 m/s</text>
+    </svg>`,
+    options: ["30&radic;3 N", "Zero", "10&radic;3 N", "20&radic;3 N"],
+    ans: 2,
+    sol: "Normal velocity component is v sin 60&deg; = &radic;3/2 m/s. &Delta;p = 2mv sin 60&deg; = &radic;3 kg m/s. F = &Delta;p/&Delta;t = &radic;3/0.1 = 10&radic;3 N."
+  },
+  {
+    id: 17, chapter: "Laws of Motion",
+    text: "A shell of mass <i>m</i> is at rest initially. It explodes into three fragments having mass in the ratio 2 : 2 : 1. If the fragments having equal mass fly off along mutually perpendicular directions with speed <i>v</i>, the speed of the third (lighter) fragment is:",
+    options: ["v", "&radic;2 v", "2&radic;2 v", "3&radic;2 v"],
+    ans: 2,
+    sol: "Masses are 2m/5, 2m/5, m/5. Resultant momentum of the two equal perpendicular fragments = (2m/5)v&radic;2. Equating to (m/5)v<sub>3</sub> gives v<sub>3</sub> = 2&radic;2 v."
+  },
+  {
+    id: 18, chapter: "Laws of Motion",
+    text: "A balloon and its content having mass <i>M</i> is moving up with an acceleration &lsquo;<i>a</i>&rsquo;. The mass that must be released from the content so that the balloon starts moving up with an acceleration &lsquo;3<i>a</i>&rsquo; will be (Take &lsquo;<i>g</i>&rsquo; as acceleration due to gravity):",
+    svg: `<svg viewBox="0 0 180 115" class="w-44 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <ellipse cx="85" cy="38" rx="26" ry="30" fill="#dbeafe" stroke="#1e40af" stroke-width="1.8"/>
+      <line x1="73" y1="66" x2="77" y2="82" stroke="#475569" stroke-width="1.4"/>
+      <line x1="97" y1="66" x2="93" y2="82" stroke="#475569" stroke-width="1.4"/>
+      <rect x="75" y="82" width="20" height="14" fill="#fde68a" stroke="#b45309" stroke-width="1.4"/>
+      <text x="85" y="42" font-size="11" text-anchor="middle" fill="#1e3a8a" font-weight="bold">M</text>
+      <line x1="130" y1="68" x2="130" y2="24" stroke="#dc2626" stroke-width="2"/>
+      <polygon points="130,22 126,30 134,30" fill="#dc2626"/>
+      <text x="137" y="48" font-size="11" fill="#dc2626" font-style="italic">a</text>
+    </svg>`,
+    options: [
+      `<span class="frac"><span>3Ma</span><span>2a + g</span></span>`,
+      `<span class="frac"><span>2Ma</span><span>3a + g</span></span>`,
+      `<span class="frac"><span>3Ma</span><span>2a &minus; g</span></span>`,
+      `<span class="frac"><span>2Ma</span><span>3a &minus; g</span></span>`
+    ],
+    ans: 1,
+    sol: "Let upthrust be U. Initially: U &minus; Mg = Ma &rArr; U = M(g + a). After releasing mass m: U &minus; (M &minus; m)g = (M &minus; m)(3a) &rArr; M(g + a) = (M &minus; m)(g + 3a) &rArr; m = 2Ma / (3a + g)."
+  },
+  {
+    id: 19, chapter: "Laws of Motion",
+    text: "A block of mass 10 kg is in contact against the inner wall of a hollow cylindrical drum of radius 1 m. The coefficient of friction between the block and the inner wall is 0.1. The minimum angular velocity needed for the vertical cylinder rotating about its axis to keep the block stationary is (<i>g</i> = 10 m/s<sup>2</sup>):",
+    svg: `<svg viewBox="0 0 180 115" class="w-44 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <ellipse cx="90" cy="24" rx="46" ry="10" fill="none" stroke="#334155" stroke-width="1.6"/>
+      <ellipse cx="90" cy="94" rx="46" ry="10" fill="none" stroke="#334155" stroke-width="1.6"/>
+      <line x1="44" y1="24" x2="44" y2="94" stroke="#334155" stroke-width="1.6"/>
+      <line x1="136" y1="24" x2="136" y2="94" stroke="#334155" stroke-width="1.6"/>
+      <line x1="90" y1="8" x2="90" y2="108" stroke="#64748b" stroke-dasharray="3 2"/>
+      <rect x="122" y="52" width="14" height="18" fill="#fecaca" stroke="#dc2626" stroke-width="1.5"/>
+      <line x1="90" y1="61" x2="122" y2="61" stroke="#334155"/>
+      <text x="106" y="56" font-size="9" text-anchor="middle">r=1m</text>
+      <text x="115" y="14" font-size="11" fill="#1d4ed8">&omega;</text>
+    </svg>`,
+    options: ["&radic;10 rad/s", "10/(2&pi;) rad/s", "10 rad/s", "10&pi; rad/s"],
+    ans: 2,
+    sol: "N = m&omega;<sup>2</sup>r and friction &mu;N &ge; mg &rArr; &omega;<sup>2</sup> &ge; g/(&mu;r) = 10/(0.1 &times; 1) = 100 &rArr; &omega;<sub>min</sub> = 10 rad/s."
+  },
+  {
+    id: 20, chapter: "Laws of Motion",
+    text: "A block <i>A</i> of mass <i>m</i><sub>1</sub> rests on a horizontal table. A light string connected to it passes over a frictionless pulley at the edge of the table and from its other end another block <i>B</i> of mass <i>m</i><sub>2</sub> is suspended. The coefficient of kinetic friction between block <i>A</i> and the table is &mu;<sub><i>k</i></sub>. When block <i>A</i> is sliding on the table, the tension in the string is:",
+    svg: `<svg viewBox="0 0 230 110" class="w-56 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <polyline points="20,45 155,45 155,100" fill="none" stroke="#334155" stroke-width="2"/>
+      <rect x="45" y="21" width="38" height="24" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+      <text x="64" y="37" font-size="10" text-anchor="middle">m1</text>
+      <circle cx="163" cy="37" r="9" fill="#e2e8f0" stroke="#334155" stroke-width="1.5"/>
+      <line x1="83" y1="28" x2="163" y2="28" stroke="#334155" stroke-width="1.4"/>
+      <line x1="172" y1="37" x2="172" y2="72" stroke="#334155" stroke-width="1.4"/>
+      <rect x="158" y="72" width="28" height="22" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/>
+      <text x="172" y="87" font-size="10" text-anchor="middle">m2</text>
+      <text x="105" y="58" font-size="10">&mu;k</text>
+    </svg>`,
+    options: [
+      "m<sub>1</sub>m<sub>2</sub>(1 &minus; &mu;<sub>k</sub>)g / (m<sub>1</sub> + m<sub>2</sub>)",
+      "(m<sub>2</sub> + &mu;<sub>k</sub>m<sub>1</sub>)g / (m<sub>1</sub> + m<sub>2</sub>)",
+      "(m<sub>2</sub> &minus; &mu;<sub>k</sub>m<sub>1</sub>)g / (m<sub>1</sub> + m<sub>2</sub>)",
+      "m<sub>1</sub>m<sub>2</sub>(1 + &mu;<sub>k</sub>)g / (m<sub>1</sub> + m<sub>2</sub>)"
+    ],
+    ans: 3,
+    sol: "a = (m<sub>2</sub> &minus; &mu;<sub>k</sub>m<sub>1</sub>)g/(m<sub>1</sub> + m<sub>2</sub>). For block A: T &minus; &mu;<sub>k</sub>m<sub>1</sub>g = m<sub>1</sub>a &rArr; T = m<sub>1</sub>m<sub>2</sub>(1 + &mu;<sub>k</sub>)g/(m<sub>1</sub> + m<sub>2</sub>)."
+  },
+  {
+    id: 21, chapter: "Work, Energy & Power",
+    text: "The potential energy of a long spring when stretched by 2 cm is <i>U</i>. If the spring is stretched by 8 cm, the potential energy stored in it will be:",
+    options: ["4U", "8U", "16U", "2U"],
+    ans: 2,
+    sol: "Spring energy U = (1/2)kx<sup>2</sup> &prop; x<sup>2</sup>. Stretching 4 times (2 cm to 8 cm) multiplies stored energy by 4<sup>2</sup> = 16, giving 16U."
+  },
+  {
+    id: 22, chapter: "Work, Energy & Power",
+    text: "An electric lift with a maximum load of 2000 kg (lift + passengers) is moving up with a constant speed of 1.5 m s<sup>&minus;1</sup>. The frictional force opposing the motion is 3000 N. The minimum power delivered by the motor to the lift in watts is (<i>g</i> = 10 m s<sup>&minus;2</sup>):",
+    options: ["23000", "20000", "34500", "23500"],
+    ans: 2,
+    sol: "At constant speed, F = mg + f = 2000(10) + 3000 = 23000 N. Power P = Fv = 23000 &times; 1.5 = 34500 W."
+  },
+  {
+    id: 23, chapter: "Work, Energy & Power",
+    text: "A particle is released from height <i>S</i> from the surface of the Earth. At a certain height its kinetic energy is three times its potential energy. The height from the surface of Earth and the speed of the particle at that instant are respectively:",
+    options: ["S/4, 3gS/2", "S/4, &radic;(3gS)/2", "S/2, &radic;(3gS)/2", "S/4, &radic;(3gS/2)"],
+    ans: 3,
+    sol: "At height h, U = mgh and K = mg(S &minus; h). K = 3U &rArr; S &minus; h = 3h &rArr; h = S/4. Speed v = &radic;(2g(S &minus; h)) = &radic;(3gS/2)."
+  },
+  {
+    id: 24, chapter: "Work, Energy & Power",
+    text: "A bullet of mass 10 g moving horizontally with a velocity of 400 m s<sup>&minus;1</sup> strikes a wooden block of mass 2 kg which is suspended by a light inextensible string of length 5 m. As a result, the centre of gravity of the block rises vertically by 10 cm. The speed of the bullet after it emerges horizontally from the block will be:",
+    svg: `<svg viewBox="0 0 240 115" class="w-60 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <line x1="60" y1="10" x2="180" y2="10" stroke="#1e293b" stroke-width="2.5"/>
+      <line x1="105" y1="10" x2="105" y2="75" stroke="#334155" stroke-width="1.6"/>
+      <rect x="88" y="75" width="34" height="24" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/>
+      <text x="105" y="91" font-size="10" text-anchor="middle">2 kg</text>
+      <line x1="105" y1="10" x2="155" y2="62" stroke="#64748b" stroke-dasharray="3 2"/>
+      <rect x="142" y="60" width="28" height="20" fill="#fef3c7" stroke="#64748b" stroke-dasharray="3 2"/>
+      <line x1="20" y1="87" x2="86" y2="87" stroke="#dc2626" stroke-width="2"/>
+      <polygon points="88,87 80,83 80,91" fill="#dc2626"/>
+      <text x="48" y="80" font-size="10" fill="#dc2626">400 m/s</text>
+      <line x1="122" y1="87" x2="165" y2="87" stroke="#1d4ed8" stroke-width="1.8"/>
+      <text x="168" y="90" font-size="10" fill="#1d4ed8">v</text>
+      <text x="180" y="75" font-size="9">h=10 cm</text>
+    </svg>`,
+    options: ["100 m s<sup>&minus;1</sup>", "80 m s<sup>&minus;1</sup>", "120 m s<sup>&minus;1</sup>", "160 m s<sup>&minus;1</sup>"],
+    ans: 2,
+    sol: "Block speed after impact: V = &radic;(2gh) = &radic;(2&times;10&times;0.1) &approx; 1.414 m/s. Momentum conservation: 0.01(400) = 0.01v + 2(1.414) &rArr; 0.01v = 4 &minus; 2.83 = 1.17 &rArr; v &approx; 117 &approx; 120 m s<sup>&minus;1</sup>."
+  },
+  {
+    id: 25, chapter: "Work, Energy & Power",
+    text: "What is the minimum velocity with which a body of mass <i>m</i> must enter a vertical loop of radius <i>R</i> so that it can complete the loop?",
+    svg: `<svg viewBox="0 0 180 115" class="w-44 h-auto border border-slate-200 rounded bg-slate-50 p-2">
+      <circle cx="100" cy="54" r="40" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+      <line x1="25" y1="94" x2="145" y2="94" stroke="#334155" stroke-width="1.8"/>
+      <circle cx="62" cy="89" r="5" fill="#dc2626"/>
+      <line x1="68" y1="89" x2="95" y2="89" stroke="#dc2626" stroke-width="1.8"/>
+      <polygon points="97,89 90,85 90,93" fill="#dc2626"/>
+      <text x="76" y="82" font-size="10" fill="#dc2626">v_min</text>
+      <line x1="100" y1="54" x2="128" y2="26" stroke="#334155"/>
+      <text x="116" y="47" font-size="10">R</text>
+    </svg>`,
+    options: ["&radic;(gR)", "&radic;(2gR)", "&radic;(3gR)", "&radic;(5gR)"],
+    ans: 3,
+    sol: "Minimum speed at the top is &radic;(gR). By energy conservation from bottom to top: v<sub>min</sub><sup>2</sup> = gR + 2g(2R) = 5gR &rArr; v<sub>min</sub> = &radic;(5gR)."
+  }
+];
+
+let TOTAL_TIME = 45 * 60;
+const SUBMISSION_LOG = [];
+const state = {
+  currentIdx: 0,
+  fontSizeIdx: 1, // 0=sm, 1=base, 2=lg
+  timeLeft: TOTAL_TIME,
+  timerId: null,
+  submitted: false,
+  answers: Array(QUESTIONS.length).fill(null),
+  statuses: Array(QUESTIONS.length).fill("not_visited")
+};
+
+const els = {
+  screenInst: document.getElementById("screen-instructions"),
+  screenExam: document.getElementById("screen-exam"),
+  screenRes: document.getElementById("screen-results"),
+  headerControls: document.getElementById("exam-header-controls"),
+  chkAgree: document.getElementById("chk-agree"),
+  btnStart: document.getElementById("btn-start-exam"),
+  timer: document.getElementById("timer-display"),
+  qNumLabel: document.getElementById("q-number-label"),
+  
+  qText: document.getElementById("q-text"),
+  qDiag: document.getElementById("q-diagram"),
+  qOpts: document.getElementById("q-options"),
+  paletteGrid: document.getElementById("palette-grid"),
+  sidebar: document.getElementById("palette-sidebar"),
+  modalBackdrop: document.getElementById("modal-backdrop"),
+  modalTitle: document.getElementById("modal-title"),
+  modalBody: document.getElementById("modal-body"),
+  modalFooter: document.getElementById("modal-footer")
+};
+
+const FONT_CLASSES = ["text-sm", "text-base", "text-lg"];
+const LABELS = ["A", "B", "C", "D"];
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60).toString().padStart(2, "0");
+  const s = (sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function startTimer() {
+  if (state.timerId) clearInterval(state.timerId);
+  state.timerId = setInterval(() => {
+    state.timeLeft--;
+    els.timer.textContent = formatTime(Math.max(0, state.timeLeft));
+    if (state.timeLeft <= 300) {
+      els.timer.classList.remove("text-emerald-300");
+      els.timer.classList.add("text-amber-300");
+    }
+    if (state.timeLeft <= 60) {
+      els.timer.classList.remove("text-amber-300");
+      els.timer.classList.add("text-red-400");
+    }
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerId);
+      submitExam();
+    }
+  }, 1000);
+}
+
+function getStatusClass(st) {
+  if (st === "answered") return "st-answered";
+  if (st === "not_answered") return "st-not-answered";
+  if (st === "marked") return "st-marked";
+  if (st === "answered_marked") return "st-answered-marked";
+  return "st-not-visited";
+}
+
+function updateCounts() {
+  const counts = { answered: 0, not_answered: 0, not_visited: 0, marked: 0, answered_marked: 0 };
+  state.statuses.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+  document.getElementById("cnt-answered").textContent = counts.answered;
+  document.getElementById("cnt-not-answered").textContent = counts.not_answered;
+  document.getElementById("cnt-not-visited").textContent = counts.not_visited;
+  document.getElementById("cnt-marked").textContent = counts.marked;
+  document.getElementById("cnt-answered-marked").textContent = counts.answered_marked;
+}
+
+function renderPalette() {
+  els.paletteGrid.innerHTML = "";
+  QUESTIONS.forEach((q, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = q.id;
+    const isActive = idx === state.currentIdx ? " active-q-ring" : "";
+    btn.className = `h-9 w-full text-xs font-bold flex items-center justify-center transition ${getStatusClass(state.statuses[idx])}${isActive}`;
+    btn.addEventListener("click", () => {
+      goToQuestion(idx);
+      if (window.innerWidth < 1024) els.sidebar.classList.add("hidden");
+    });
+    els.paletteGrid.appendChild(btn);
+  });
+  updateCounts();
+}
+
+function renderQuestion() {
+  const idx = state.currentIdx;
+  const q = QUESTIONS[idx];
+  if (state.statuses[idx] === "not_visited") {
+    state.statuses[idx] = "not_answered";
+  }
+
+  els.qNumLabel.textContent = `Question No. ${q.id}`;
+  
+
+  els.qText.className = `text-slate-800 leading-relaxed ${FONT_CLASSES[state.fontSizeIdx]}`;
+  els.qText.innerHTML = q.text;
+
+  if (q.svg) {
+    els.qDiag.innerHTML = q.svg;
+    els.qDiag.classList.remove("hidden");
+  } else {
+    els.qDiag.innerHTML = "";
+    els.qDiag.classList.add("hidden");
+  }
+
+  els.qOpts.innerHTML = "";
+  q.options.forEach((optHtml, oIdx) => {
+    const selected = state.answers[idx] === oIdx;
+    const label = document.createElement("label");
+    label.className = `flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
+      selected ? "bg-blue-50 border-blue-600 ring-1 ring-blue-600" : "bg-white border-slate-200 hover:bg-slate-50"
+    }`;
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = `q_${q.id}`;
+    radio.checked = selected;
+    radio.className = "w-4 h-4 accent-blue-700 shrink-0";
+    radio.addEventListener("change", () => {
+      state.answers[idx] = oIdx;
+      renderQuestion();
+    });
+
+    const badge = document.createElement("span");
+    badge.className = `w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
+      selected ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700"
+    }`;
+    badge.textContent = LABELS[oIdx];
+
+    const span = document.createElement("span");
+    span.className = `text-slate-800 ${FONT_CLASSES[state.fontSizeIdx]}`;
+    span.innerHTML = optHtml;
+
+    label.appendChild(radio);
+    label.appendChild(badge);
+    label.appendChild(span);
+    els.qOpts.appendChild(label);
+  });
+
+  renderPalette();
+}
+
+function goToQuestion(idx) {
+  if (idx < 0 || idx >= QUESTIONS.length) return;
+  state.currentIdx = idx;
+  renderQuestion();
+}
+
+function nextIndexInFilter() {
+  return (state.currentIdx + 1) % QUESTIONS.length;
+}
+
+function prevIndexInFilter() {
+  return state.currentIdx > 0 ? state.currentIdx - 1 : 0;
+}
+
+function openModal(title, bodyHtml, buttons) {
+  els.modalTitle.textContent = title;
+  els.modalBody.innerHTML = bodyHtml;
+  els.modalFooter.innerHTML = "";
+  buttons.forEach(b => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = b.label;
+    btn.className = b.cls;
+    btn.addEventListener("click", b.onClick);
+    els.modalFooter.appendChild(btn);
+  });
+  els.modalBackdrop.classList.remove("hidden");
+}
+
+function closeModal() {
+  els.modalBackdrop.classList.add("hidden");
+}
+
+function submitExam() {
+  if (state.submitted) return;
+  state.submitted = true;
+  if (state.timerId) clearInterval(state.timerId);
+  closeModal();
+
+  els.screenExam.classList.add("hidden");
+  els.headerControls.classList.add("hidden");
+  els.screenRes.classList.remove("hidden");
+
+  let correct = 0, incorrect = 0, unattempted = 0;
+  QUESTIONS.forEach((q, idx) => {
+    const ans = state.answers[idx];
+    if (ans === null) unattempted++;
+    else if (ans === q.ans) correct++;
+    else incorrect++;
+  });
+
+  const totalScore = correct * 4 - incorrect;
+  const attempted = correct + incorrect;
+  const acc = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+  const timeSpent = TOTAL_TIME - Math.max(0, state.timeLeft);
+
+  document.getElementById("res-score").textContent = `${totalScore} / 100`;
+  document.getElementById("res-correct").textContent = correct;
+  document.getElementById("res-incorrect").textContent = incorrect;
+  document.getElementById("res-unattempted").textContent = unattempted;
+  document.getElementById("res-acc-time").textContent = `${acc}% | ${formatTime(timeSpent)}`;
+  const submittedAt = new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  document.getElementById("res-submitted-at").textContent = `Submitted: ${submittedAt} (Time Taken: ${formatTime(timeSpent)})`;
+  const candName = (document.getElementById("inp-cand-name")?.value || "NEET Aspirant").trim();
+  const payload = {
+    candidate: candName,
+    submittedAt,
+    timeTaken: formatTime(timeSpent),
+    score: totalScore,
+    correct,
+    incorrect,
+    unattempted,
+    accuracy: `${acc}%`,
+    responses: QUESTIONS.map((q, i) => ({ q: q.id, selected: state.answers[i] !== null ? LABELS[state.answers[i]] : "-", correct: LABELS[q.ans] }))
+  };
+  SUBMISSION_LOG.push(payload);
+  try { localStorage.setItem("neet_cbt_submissions", JSON.stringify(SUBMISSION_LOG)); } catch (e) {}
+  const formBadge = document.getElementById("email-status-badge");
+  const csvRows = ["Q,Selected,Correct"];
+  payload.responses.forEach(r => csvRows.push(`Q${r.q},${r.selected},${r.correct}`));
+  const formResponseText = `Candidate: ${candName} | Submitted: ${submittedAt} | Time: ${payload.timeTaken} | Score: ${totalScore}/100 (C:${correct}, I:${incorrect}, U:${unattempted}, Acc:${acc}%) | ${csvRows.join(" ; ")}`;
+
+  if (GOOGLE_FORM_ENTRY_ID && GOOGLE_FORM_ENTRY_ID !== "entry.YOUR_ENTRY_ID") {
+    formBadge.textContent = "Submitting response to Google Form...";
+    try {
+      const fd = new FormData();
+      fd.append(GOOGLE_FORM_ENTRY_ID, formResponseText);
+      fetch(GOOGLE_FORM_ACTION_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: fd
+      }).then(() => {
+        formBadge.className = "mt-1.5 text-xs font-medium text-emerald-700";
+        formBadge.textContent = "Response submitted automatically to Google Form (NEET ANSWER).";
+      }).catch(() => {
+        formBadge.className = "mt-1.5 text-xs font-medium text-amber-700";
+        formBadge.innerHTML = `Could not auto-submit. <a href="${GOOGLE_FORM_VIEW_URL}" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-blue-700">Open Google Form</a>`;
+      });
+    } catch (e) {
+      formBadge.className = "mt-1.5 text-xs font-medium text-amber-700";
+      formBadge.innerHTML = `Could not auto-submit. <a href="${GOOGLE_FORM_VIEW_URL}" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-blue-700">Open Google Form</a>`;
+    }
+  } else {
+    formBadge.className = "mt-1.5 text-xs font-medium text-amber-700";
+    formBadge.innerHTML = `Google Form linked (NEET ANSWER) — set <code>GOOGLE_FORM_ENTRY_ID</code> in the HTML to enable silent auto-submit, or <a href="${GOOGLE_FORM_VIEW_URL}" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-blue-700">open form</a>.`;
+  }
+
+
+
+  renderReviewList("all");
+}
+
+function renderReviewList(filter) {
+  const container = document.getElementById("review-list");
+  container.innerHTML = "";
+  QUESTIONS.forEach((q, idx) => {
+    const uAns = state.answers[idx];
+    const status = uAns === null ? "unattempted" : (uAns === q.ans ? "correct" : "incorrect");
+    if (filter !== "all" && status !== filter) return;
+
+    const badge = status === "correct"
+      ? `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-xs">Correct (+4)</span>`
+      : status === "incorrect"
+      ? `<span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-semibold text-xs">Incorrect (&minus;1)</span>`
+      : `<span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold text-xs">Unattempted (0)</span>`;
+
+    const card = document.createElement("div");
+    card.className = "p-4 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2.5";
+    card.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-slate-900">Q${q.id}.</span>
+          
+          
+        </div>
+        ${badge}
+      </div>
+      <div class="text-sm text-slate-800">${q.text}</div>
+      ${q.svg ? `<div class="flex justify-center py-1">${q.svg}</div>` : ""}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+        ${q.options.map((opt, oIdx) => {
+          const isCorr = oIdx === q.ans;
+          const isUser = oIdx === uAns;
+          let cls = "bg-white border-slate-200 text-slate-700";
+          if (isCorr) cls = "bg-emerald-50 border-emerald-500 text-emerald-900 font-semibold";
+          else if (isUser) cls = "bg-red-50 border-red-400 text-red-900";
+          return `<div class="p-2 rounded border ${cls}">(${LABELS[oIdx]}) ${opt} ${isCorr ? "&check;" : isUser ? "&times;" : ""}</div>`;
+        }).join("")}
+      </div>
+      <div class="text-xs bg-white p-3 rounded border border-slate-200 text-slate-700 leading-relaxed">
+        <strong>Solution:</strong> ${q.sol}
+        
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  if (!container.children.length) {
+    container.innerHTML = `<div class="text-sm text-slate-500 text-center py-6">No questions match this filter.</div>`;
+  }
+}
+
+// EVENT LISTENERS
+const SCHEDULED_START_MS = new Date("2026-11-25T09:00:00+05:30").getTime();
+let isScheduleOpen = false;
+let schedTimerId = null;
+
+const inpCandName = document.getElementById("inp-cand-name");
+const instAvatar = document.getElementById("inst-avatar");
+const instCandPreview = document.getElementById("inst-cand-preview");
+const candNameHint = document.getElementById("cand-name-hint");
+
+function getInitials(name) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function syncStartButtons() {
+  const nameVal = inpCandName.value.trim();
+  const hasName = nameVal.length >= 2;
+  const agreed = els.chkAgree.checked;
+  instAvatar.textContent = getInitials(nameVal);
+  instCandPreview.textContent = nameVal ? `Candidate: ${nameVal}` : "Candidate: Not entered";
+  if (hasName) {
+    inpCandName.classList.remove("border-slate-300", "border-red-400");
+    inpCandName.classList.add("border-emerald-500");
+    candNameHint.className = "text-xs text-emerald-700 font-medium mt-0.5";
+    candNameHint.textContent = "Name recorded. Check the box below to continue.";
+  } else {
+    inpCandName.classList.remove("border-emerald-500");
+    inpCandName.classList.add("border-slate-300");
+    candNameHint.className = "text-xs text-slate-500 mt-0.5";
+    candNameHint.textContent = "Enter your name (at least 2 characters) to unlock the test.";
+  }
+  els.btnStart.disabled = !(hasName && agreed && isScheduleOpen);
+}
+
+function updateScheduleCountdown() {
+  const diff = SCHEDULED_START_MS - Date.now();
+  const cdEl = document.getElementById("sched-countdown");
+  const stEl = document.getElementById("sched-status-text");
+  const banner = document.getElementById("sched-banner");
+  if (diff <= 0) {
+    isScheduleOpen = true;
+    cdEl.textContent = "00:00:00";
+    stEl.textContent = "Exam window is now open! Enter your name, check the box, and click Proceed to Test.";
+    banner.className = "bg-emerald-50 border border-emerald-300 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3";
+    els.btnStart.textContent = "Proceed to Test";
+    syncStartButtons();
+    if (schedTimerId) clearInterval(schedTimerId);
+    return;
+  }
+  const totalSec = Math.floor(diff / 1000);
+  const hrs = Math.floor(totalSec / 3600).toString().padStart(2, "0");
+  const mins = Math.floor((totalSec % 3600) / 60).toString().padStart(2, "0");
+  const secs = (totalSec % 60).toString().padStart(2, "0");
+  cdEl.textContent = `${hrs}:${mins}:${secs}`;
+  els.btnStart.disabled = true;
+}
+
+inpCandName.addEventListener("input", syncStartButtons);
+els.chkAgree.addEventListener("change", syncStartButtons);
+updateScheduleCountdown();
+if (!isScheduleOpen) {
+  schedTimerId = setInterval(updateScheduleCountdown, 1000);
+}
+
+// Optional: Paste a Formspree or Google Apps Script Web App URL to receive submissions when hosted on GitHub Pages
+const GOOGLE_FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeEsytlsXTzXmFJZRHS357X3wOtlvn4qiZ1wEYNbXrUblxX7g/formResponse";
+const GOOGLE_FORM_VIEW_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeEsytlsXTzXmFJZRHS357X3wOtlvn4qiZ1wEYNbXrUblxX7g/viewform";
+// Replace with your Response field entry ID from Google Forms -> Get pre-filled link (e.g. "entry.123456789")
+const GOOGLE_FORM_ENTRY_ID = "entry.1581430896";
+
+function launchExam() {
+  const candInput = document.getElementById("inp-cand-name");
+  const candName = (candInput && candInput.value.trim()) ? candInput.value.trim() : "NEET Aspirant";
+  const sideCand = document.getElementById("sidebar-cand-name");
+  if (sideCand) sideCand.textContent = candName;
+  const sideAv = document.getElementById("sidebar-avatar");
+  if (sideAv) sideAv.textContent = getInitials(candName);
+  const selDur = document.querySelector('input[name="exam_duration"]:checked');
+  TOTAL_TIME = (selDur ? parseInt(selDur.value, 10) : 45) * 60;
+  state.timeLeft = TOTAL_TIME;
+  els.timer.textContent = formatTime(TOTAL_TIME);
+  els.screenInst.classList.add("hidden");
+  els.screenExam.classList.remove("hidden");
+  els.headerControls.classList.remove("hidden");
+  if (schedTimerId) clearInterval(schedTimerId);
+  startTimer();
+  renderQuestion();
+}
+
+els.btnStart.addEventListener("click", launchExam);
+
+document.getElementById("btn-save-next").addEventListener("click", () => {
+  const idx = state.currentIdx;
+  state.statuses[idx] = state.answers[idx] !== null ? "answered" : "not_answered";
+  goToQuestion(nextIndexInFilter());
+});
+
+document.getElementById("btn-clear").addEventListener("click", () => {
+  const idx = state.currentIdx;
+  state.answers[idx] = null;
+  state.statuses[idx] = "not_answered";
+  renderQuestion();
+});
+
+document.getElementById("btn-save-mark").addEventListener("click", () => {
+  const idx = state.currentIdx;
+  state.statuses[idx] = state.answers[idx] !== null ? "answered_marked" : "marked";
+  goToQuestion(nextIndexInFilter());
+});
+
+document.getElementById("btn-mark-next").addEventListener("click", () => {
+  const idx = state.currentIdx;
+  state.statuses[idx] = state.answers[idx] !== null ? "answered_marked" : "marked";
+  goToQuestion(nextIndexInFilter());
+});
+
+document.getElementById("btn-prev").addEventListener("click", () => goToQuestion(prevIndexInFilter()));
+document.getElementById("btn-next").addEventListener("click", () => goToQuestion(nextIndexInFilter()));
+
+document.getElementById("btn-font-dec").addEventListener("click", () => {
+  if (state.fontSizeIdx > 0) { state.fontSizeIdx--; renderQuestion(); }
+});
+document.getElementById("btn-font-inc").addEventListener("click", () => {
+  if (state.fontSizeIdx < 2) { state.fontSizeIdx++; renderQuestion(); }
+});
+
+
+
+document.getElementById("btn-mobile-palette").addEventListener("click", () => {
+  els.sidebar.classList.remove("hidden");
+  els.sidebar.classList.add("flex");
+});
+document.getElementById("btn-close-palette").addEventListener("click", () => {
+  els.sidebar.classList.add("hidden");
+});
+
+document.getElementById("btn-qp-modal").addEventListener("click", () => {
+  const listHtml = QUESTIONS.map((q, i) => `
+    <div class="pb-3 mb-3 border-b border-slate-200 last:border-0">
+      <div class="font-semibold text-slate-900 mb-1">Q${q.id}.</div>
+      <div class="text-xs text-slate-700">${q.text}</div>
+    </div>
+  `).join("");
+  openModal("Full Question Paper (Q1–Q25)", listHtml, [
+    { label: "Close", cls: "px-4 py-1.5 rounded bg-slate-200 text-slate-800 text-xs font-semibold", onClick: closeModal }
+  ]);
+});
+
+document.getElementById("btn-inst-modal").addEventListener("click", () => {
+  openModal("NTA CBT Instructions", `
+    <ul class="list-disc pl-5 space-y-2 text-xs sm:text-sm">
+      <li><strong>+4 marks</strong> for each correct response, <strong>&minus;1 mark</strong> for each incorrect response.</li>
+      <li>Questions marked as <strong>Answered &amp; Marked for Review</strong> are evaluated in the final score.</li>
+      <li>Use <strong>Save &amp; Next</strong> to record your answer and move forward.</li>
+    </ul>
+  `, [
+    { label: "Got It", cls: "px-4 py-1.5 rounded bg-blue-700 text-white text-xs font-semibold", onClick: closeModal }
+  ]);
+});
+
+document.getElementById("btn-open-submit").addEventListener("click", () => {
+  const counts = { answered: 0, not_answered: 0, not_visited: 0, marked: 0, answered_marked: 0 };
+  state.statuses.forEach(s => { counts[s] = (counts[s] || 0) + 1; });
+  openModal("Confirm Test Submission", `
+    <p class="mb-3 text-sm">Are you sure you want to submit your test? You cannot change your answers after submission.</p>
+    <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded border border-slate-200">
+      <div>Answered: <strong>${counts.answered}</strong></div>
+      <div>Not Answered: <strong>${counts.not_answered}</strong></div>
+      <div>Marked for Review: <strong>${counts.marked}</strong></div>
+      <div>Answered &amp; Marked: <strong>${counts.answered_marked}</strong></div>
+      <div class="col-span-2">Not Visited: <strong>${counts.not_visited}</strong></div>
+    </div>
+  `, [
+    { label: "Cancel", cls: "px-4 py-1.5 rounded bg-slate-200 text-slate-800 text-xs font-semibold", onClick: closeModal },
+    { label: "Yes, Submit Test", cls: "px-4 py-1.5 rounded bg-emerald-600 text-white text-xs font-semibold", onClick: submitExam }
+  ]);
+});
+
+document.getElementById("btn-modal-close").addEventListener("click", closeModal);
+
+document.querySelectorAll(".rev-filter").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".rev-filter").forEach(b => {
+      b.className = b === btn
+        ? "rev-filter px-3 py-1.5 rounded bg-blue-700 text-white"
+        : "rev-filter px-3 py-1.5 rounded bg-slate-100 text-slate-700";
+    });
+    renderReviewList(btn.dataset.filter);
+  });
+});
+
+document.getElementById("btn-retake").addEventListener("click", () => {
+  state.currentIdx = 0;
+  state.timeLeft = TOTAL_TIME;
+  state.submitted = false;
+  state.answers.fill(null);
+  state.statuses.fill("not_visited");
+  els.timer.textContent = formatTime(TOTAL_TIME);
+  els.timer.className = "font-mono font-bold text-sm sm:text-base text-emerald-300";
+  els.screenRes.classList.add("hidden");
+  els.screenExam.classList.remove("hidden");
+  els.headerControls.classList.remove("hidden");
+  startTimer();
+  renderQuestion();
+});
+
+document.getElementById("btn-download-csv").addEventListener("click", () => {
+  const last = SUBMISSION_LOG[SUBMISSION_LOG.length - 1];
+  if (!last) return;
+  const rows = [
+    ["Candidate", last.candidate],
+    ["Submitted At", last.submittedAt],
+    ["Time Taken", last.timeTaken],
+    ["Score", `${last.score} / 100`],
+    ["Correct", last.correct],
+    ["Incorrect", last.incorrect],
+    ["Unattempted", last.unattempted],
+    ["Accuracy", last.accuracy],
+    [],
+    ["Question", "Selected", "Correct Answer"]
+  ];
+  last.responses.forEach(r => rows.push([`Q${r.q}`, r.selected, r.correct]));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `neet_cbt_result_${last.candidate.replace(/\s+/g, "_")}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("btn-copy-summary").addEventListener("click", () => {
+  const last = SUBMISSION_LOG[SUBMISSION_LOG.length - 1];
+  if (!last) return;
+  const summary = `NEET Physics CBT Result\nCandidate: ${last.candidate}\nSubmitted: ${last.submittedAt}\nTime Taken: ${last.timeTaken}\nScore: ${last.score}/100 (Correct: ${last.correct}, Incorrect: ${last.incorrect}, Unattempted: ${last.unattempted}, Accuracy: ${last.accuracy})`;
+  const btn = document.getElementById("btn-copy-summary");
+  const done = () => { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy Summary"; }, 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(summary).then(done).catch(() => {
+      const ta = document.createElement("textarea");
+      ta.value = summary;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      done();
+    });
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = summary;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    done();
+  }
+});
+
+
+
+</script>
+</body>
+</html>
